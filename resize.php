@@ -1,73 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Resizer</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f4f4f4;
-        }
+<?php
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $fileType = $_FILES['image']['type'];
+    $fileName = $_FILES['image']['name'];
+    $fileTmpName = $_FILES['image']['tmp_name'];
+    $fileSize = $_FILES['image']['size'];
+    
+    $uploadDir = "uploads/";
+    $uploadFile = $uploadDir . basename($fileName);
 
-        form {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    // Memeriksa apakah file yang diupload adalah gambar
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (in_array($fileType, $allowedTypes)) {
+        // Memeriksa ukuran file
+        $maxFileSize = 5 * 1024 * 1024; // 5MB
+        if ($fileSize <= $maxFileSize) {
+            // Memindahkan file yang diupload ke direktori uploads
+            if (move_uploaded_file($fileTmpName, $uploadFile)) {
+                $newWidth = $_POST['width'];
+                $newHeight = $_POST['height'];
+                list($width, $height) = getimagesize($uploadFile);
+                $newImage = imagecreatetruecolor($newWidth, $newHeight);
+                if ($fileType == "image/jpeg" || $fileType == "image/jpg") {
+                    $source = imagecreatefromjpeg($uploadFile);
+                } elseif ($fileType == "image/png") {
+                    $source = imagecreatefrompng($uploadFile);
+                }
+                imagecopyresampled($newImage, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+                $resizedFile = $uploadDir . "resized_" . $fileName;
+                if ($fileType == "image/jpeg" || $fileType == "image/jpg") {
+                    imagejpeg($newImage, $resizedFile);
+                } elseif ($fileType == "image/png") {
+                    imagepng($newImage, $resizedFile);
+                }
+                echo "<h2>Original Image:</h2>";
+                echo "<img src='$uploadFile' alt='Original Image' width='300'>";
+                echo "<h2>Resized Image:</h2>";
+                echo "<img src='$resizedFile' alt='Resized Image' width='300'>";
+                // Menampilkan tombol unduh
+                echo "<a href='$resizedFile' download><button>Download Resized Image</button></a>";
+                // Menghapus file yang diupload
+                unlink($uploadFile);
+                imagedestroy($source);
+                imagedestroy($newImage);
+            } else {
+                echo "Failed to upload file.";
+            }
+        } else {
+            echo "File is too large. Maximum file size is 5MB.";
         }
-
-        h1 {
-            text-align: center;
-        }
-
-        label {
-            font-weight: bold;
-        }
-
-        input[type="file"] {
-            margin-bottom: 10px;
-        }
-
-        button {
-            display: block;
-            margin-top: 10px;
-            padding: 8px 16px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .image-container {
-            text-align: center;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <form action="resize.php" method="post" enctype="multipart/form-data">
-        <h1>Image Resizer</h1>
-        <label for="image">Select Image:</label>
-        <input type="file" name="image" id="image" required>
-        <br>
-        <label for="width">Width (px):</label>
-        <input type="number" name="width" id="width" min="1" required>
-        <br>
-        <label for="height">Height (px):</label>
-        <input type="number" name="height" id="height" min="1" required>
-        <br>
-        <button type="submit" name="submit">Resize</button>
-    </form>
-    <div class="image-container">
-        <!-- Placeholder for resized image -->
-    </div>
-</body>
-</html>
+    } else {
+        echo "Only JPG, JPEG, and PNG files are allowed.";
+    }
+}
+?>
