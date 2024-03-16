@@ -38,10 +38,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 echo "<img src='$resizedFile' alt='Resized Image' width='300'>";
                 // Menampilkan tombol unduh
                 echo "<a href='$resizedFile' download><button>Download Resized Image</button></a>";
-                // Menghapus file yang diupload
-                unlink($uploadFile);
-                imagedestroy($source);
-                imagedestroy($newImage);
             } else {
                 echo "Failed to upload file.";
             }
